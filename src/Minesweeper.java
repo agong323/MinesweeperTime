@@ -2,7 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public class Minesweeper extends JFrame {
-    private JLabel status;
+    private final JLabel status;
 
     public Minesweeper(){
         status = new JLabel("");

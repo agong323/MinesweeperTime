@@ -14,14 +14,18 @@ public class Game extends JPanel {
     public static final int HEIGHT = 20;
     public static final int X = 24;
     public static final int Y = 20;
-    protected JFrame window;
 
     static int uncover;
     public static final int BOMB_COUNT = 99;
-    private int score_board_height = 0;
     private boolean end = false;
     private boolean win = false;
+    private boolean playAgain = false;
     private int timeLimit;
+
+    private static final int PLAYAGAIN_W = 4 * WIDTH;
+    private static final int PLAYAGAIN_H = 2 * HEIGHT;
+    private static final int PLAYAGAIN_X = X * WIDTH / 2 - PLAYAGAIN_W / 2;
+    private static final int PLAYAGAIN_Y = Y * HEIGHT/ 2 - PLAYAGAIN_H / 2;
 
     private static BufferedImage FACING_DOWN_IMAGE = null;
     private static BufferedImage FLAGGED_IMAGE = null;
@@ -29,9 +33,9 @@ public class Game extends JPanel {
 
     static {
         try {
-            FACING_DOWN_IMAGE = ImageIO.read(new File("src/img/" + Game.DRAW_FACING_DOWN + ".png"));
-            FLAGGED_IMAGE = ImageIO.read(new File("src/img/" + Game.DRAW_FLAGGED + ".png"));
-            BOMB_IMAGE = ImageIO.read(new File("src/img/" + Game.DRAW_BOMB + ".png"));
+            FACING_DOWN_IMAGE = resizeImage(ImageIO.read(new File("src/img/" + Game.DRAW_FACING_DOWN + ".png")),WIDTH, HEIGHT);
+            FLAGGED_IMAGE = resizeImage(ImageIO.read(new File("src/img/" + Game.DRAW_FLAGGED + ".png")), WIDTH, HEIGHT);
+            BOMB_IMAGE = resizeImage(ImageIO.read(new File("src/img/" + Game.DRAW_BOMB + ".png")), WIDTH, HEIGHT);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -50,7 +54,7 @@ public class Game extends JPanel {
     }
 
     public void initGame() {
-        setPreferredSize(new Dimension(X * WIDTH, Y * HEIGHT + score_board_height));
+        setPreferredSize(new Dimension(X * WIDTH, Y * HEIGHT));
         addMouseListener(new MyMouseAdapter());
         newGame();
     }
@@ -58,6 +62,7 @@ public class Game extends JPanel {
     private void newGame() {
         end = false;
         win = false;
+        playAgain = false;
         uncover = 0;
         timeLimit = 211;
         status.setText("TIME LEFT: " + timeLimit);
@@ -73,23 +78,14 @@ public class Game extends JPanel {
             for(int r = 0; r < layout.getLength(); r ++){
                 for(int c = 0; c < layout.getHeight(); c ++){
                     if (layout.board[r][c].isBomb()) {
-                        BufferedImage temp = null;
-                        try {
-                            g.drawImage(resizeImage(BOMB_IMAGE, WIDTH, HEIGHT), c * WIDTH, r * HEIGHT + score_board_height, this);
-                        } catch (IOException e) {
-                        }
+                        g.drawImage(BOMB_IMAGE, c * WIDTH, r * HEIGHT, this);
                     }else if (layout.board[r][c].isFlagged()) {
-                        BufferedImage temp = null;
-                        try {
-                            g.drawImage(resizeImage(FLAGGED_IMAGE, WIDTH, HEIGHT), c * WIDTH, r * HEIGHT + score_board_height, this);
-                        } catch (IOException e) { }
+                        g.drawImage(FLAGGED_IMAGE, c * WIDTH, r * HEIGHT, this);
                     }else if (!layout.board[r][c].isCleared()) {
-                        BufferedImage temp = null;
-                        try {
-                            g.drawImage(resizeImage(FACING_DOWN_IMAGE, WIDTH, HEIGHT), c * WIDTH, r * HEIGHT + score_board_height, this);
-                        } catch (IOException e) { }
+                        g.drawImage(FACING_DOWN_IMAGE, c * WIDTH, r * HEIGHT, this);
+
                     }else{
-                        g.drawImage(layout.board[r][c].getImage(), c * WIDTH, r * HEIGHT + score_board_height, this);
+                        g.drawImage(layout.board[r][c].getImage(), c * WIDTH, r * HEIGHT, this);
                     }
                 }
             }
@@ -99,20 +95,22 @@ public class Game extends JPanel {
             for (int r = 0; r < layout.getLength(); r++){
                 for (int c = 0; c < layout.getHeight(); c++) {
                     if (layout.board[r][c].isFlagged()) {
-                        BufferedImage temp = null;
-                        try {
-                            g.drawImage(resizeImage(FLAGGED_IMAGE, WIDTH, HEIGHT), c * WIDTH, r * HEIGHT + score_board_height, this);
-                        } catch (IOException e) { }
+                        g.drawImage(FLAGGED_IMAGE, c * WIDTH, r * HEIGHT, this);
                     }else if (!layout.board[r][c].isCleared()) {
-                        BufferedImage temp = null;
-                        try {
-                            g.drawImage(resizeImage(FACING_DOWN_IMAGE, WIDTH, HEIGHT), c * WIDTH, r * HEIGHT + score_board_height, this);
-                        } catch (IOException e) { }
+                        g.drawImage(FACING_DOWN_IMAGE, c * WIDTH, r * HEIGHT, this);
                     } else {
-                        g.drawImage(layout.board[r][c].getImage(), c * WIDTH, r * HEIGHT + score_board_height, this);
+                        g.drawImage(layout.board[r][c].getImage(), c * WIDTH, r * HEIGHT, this);
                     }
                 }
             }
+        }
+        if(playAgain){
+            g.setColor(Color.red);
+            g.fillRect(PLAYAGAIN_X, PLAYAGAIN_Y, PLAYAGAIN_W, PLAYAGAIN_H);
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("TimesRoman", Font.BOLD, 12));
+            FontMetrics fm = g.getFontMetrics();
+            g.drawString("Play again?", X * WIDTH / 2 - fm.stringWidth("Play again?") / 2, Y * HEIGHT/ 2 + fm.getHeight()/2);
         }
     }
 
@@ -131,41 +129,45 @@ public class Game extends JPanel {
             int x = e.getX();
             int y = e.getY();
             int col = x / WIDTH;
-            int row = (y - score_board_height) / HEIGHT;
+            int row = (y) / HEIGHT;
             boolean doRepaint = false;
-            if(uncover == 0){
-                Timer newTimer = new Timer();
-                Thread myTimer = new Thread(newTimer);
-                myTimer.start();
-            }
-            if (col < X && row < Y) {
-                if (e.getButton() == MouseEvent.BUTTON3 || (e.isControlDown() && e.getButton() == MouseEvent.BUTTON1)) {
-                    if (layout.board[row][col].isCleared()) {
-                    } else{
-                        if(layout.board[row][col].isFlagged()) {
-                            layout.board[row][col].setFlagged(false);
+            if(!end && !win){
+                if (uncover == 0) {
+                    Timer newTimer = new Timer();
+                    Thread myTimer = new Thread(newTimer);
+                    myTimer.start();
+                }
+                if (col < X && row < Y) {
+                    if (e.getButton() == MouseEvent.BUTTON3 || (e.isControlDown() && e.getButton() == MouseEvent.BUTTON1)) {
+                        if (layout.board[row][col].isCleared()) {
+                        } else {
+                            if (layout.board[row][col].isFlagged()) {
+                                layout.board[row][col].setFlagged(false);
+                            } else {
+                                layout.board[row][col].setFlagged(true);
+                            }
+                            doRepaint = true;
                         }
-                        else{
-                            layout.board[row][col].setFlagged(true);
+                    } else if (e.getButton() == MouseEvent.BUTTON1) {
+                        if (layout.board[row][col].isCleared() || layout.board[row][col].isFlagged()) {
+                        } else if (layout.board[row][col].isBomb()) {
+                            end = true;
+                            doRepaint = true;
+                        } else {
+                            if (layout.board[row][col].getBombNearby() == 0) {
+                                clearZeros(row, col);
+                            }
+                            layout.board[row][col].clear();
+                            doRepaint = true;
                         }
-                        doRepaint = true;
                     }
                 }
-                else if(e.getButton() == MouseEvent.BUTTON1){
-                    if (layout.board[row][col].isCleared() || layout.board[row][col].isFlagged()) {
-                    } else if (layout.board[row][col].isBomb()) {
-                        end = true;
-                        doRepaint = true;
-                    }else{
-                        if(layout.board[row][col].getBombNearby() == 0){
-                            clearZeros(row, col);
-                        }
-                        layout.board[row][col].clear();
-                        doRepaint = true;
-                    }
+                if (doRepaint) {
+                    repaint();
                 }
             }
-            if(doRepaint){
+            if(playAgain && x >= PLAYAGAIN_X && x <= PLAYAGAIN_X + PLAYAGAIN_W && y >= PLAYAGAIN_Y && y <= PLAYAGAIN_Y + PLAYAGAIN_H){
+                newGame();
                 repaint();
             }
         }
@@ -222,8 +224,7 @@ public class Game extends JPanel {
         public void run() {
             try {
                 Thread.sleep(1000);
-            } catch (InterruptedException e) {
-            }
+            } catch (InterruptedException e) {}
             while(!(uncover == (X)*(Y) - BOMB_COUNT) && timeLimit >= 1 && !end && !win){
                 try {
                     timeLimit --;
@@ -242,6 +243,20 @@ public class Game extends JPanel {
             }
             if(end){
                 status.setText("Game Over! Score: " + (int)((double)uncover / (X * Y - BOMB_COUNT) * 100) + "%");
+                try {
+                    Thread.sleep(1500);
+                } catch (InterruptedException e) {
+                }
+                playAgain = true;
+                repaint();
+            }
+            if(win){
+                try {
+                    Thread.sleep(1500);
+                } catch (InterruptedException e) {
+                }
+                playAgain = true;
+                repaint();
             }
         }
     }
