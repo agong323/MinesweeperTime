@@ -3,11 +3,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.Buffer;
 
 public class Game extends JPanel {
     private Board layout;
@@ -23,7 +21,6 @@ public class Game extends JPanel {
     private int score_board_height = 0;
     private boolean end = false;
     private boolean win = false;
-    private int flags;
     private int timeLimit;
 
     private static BufferedImage FACING_DOWN_IMAGE = null;
@@ -147,11 +144,9 @@ public class Game extends JPanel {
                     } else{
                         if(layout.board[row][col].isFlagged()) {
                             layout.board[row][col].setFlagged(false);
-                            flags--;
                         }
                         else{
                             layout.board[row][col].setFlagged(true);
-                            flags ++;
                         }
                         doRepaint = true;
                     }
