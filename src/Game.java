@@ -244,7 +244,7 @@ public class Game extends JPanel {
             if(end){
                 status.setText("Game Over! Score: " + (int)((double)uncover / (X * Y - BOMB_COUNT) * 100) + "%");
                 try {
-                    Thread.sleep(1500);
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                 }
                 playAgain = true;
@@ -252,7 +252,7 @@ public class Game extends JPanel {
             }
             if(win){
                 try {
-                    Thread.sleep(1500);
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                 }
                 playAgain = true;
